@@ -1,0 +1,268 @@
+<script lang="ts">
+import { onMounted, reactive, ref } from 'vue'
+import FooterShow from '../footer/FooterShow.vue'
+import NavbarShow from '../navbar/NavbarShow.vue'
+import axios from 'axios'
+import Swal from 'sweetalert2'
+import { useRouter } from 'vue-router'
+
+export default {
+  name: 'JobApplicationList',
+  components: {
+    NavbarShow,
+    FooterShow
+  },
+  setup() {
+    const JobApplications = ref<any[]>([])
+    const jwtToken = sessionStorage.getItem('jwtToken')
+    const router = useRouter()
+    const fetchUser = async () => {
+      try {
+        const response = await axios.get(`http://localhost:5094/api/Account/user`, {
+          headers: {
+            Authorization: `Bearer ${jwtToken}`
+          },
+          withCredentials: true
+        })
+        const UserInfo = response.data
+        state.currentUser.Id = UserInfo.id
+        state.currentUser.userName = UserInfo.userName
+        state.currentUser.normalizedUserName = UserInfo.normalizedUserName
+        state.currentUser.email = UserInfo.email
+        state.currentUser.phoneNumber = UserInfo.phoneNumber
+        state.currentUser.dateCreated = UserInfo.dateCreated
+        console.log('current user : ', UserInfo)
+        return response.data
+      } catch (error) {
+        console.error("Erreur lors de la récupération de l'utilisateur:", error)
+        throw error
+      }
+    }
+    const state = reactive({
+      currentUser: {
+        Id: '',
+        userName: '',
+        normalizedUserName: '',
+        phoneNumber: '',
+        email: '',
+        dateCreated: new Date()
+      }
+    })
+    const formatDate = (date: Date) => {
+      return new Date(date).toLocaleDateString('fr-FR', {
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric'
+      })
+    }
+  
+    const handleRowClick = (appUserId: string, offreId: number) => {
+      router.push(`/Jobapplication-details/${appUserId}/${offreId}`)
+    }
+    const interview = (appUserId: string) => {
+      router.push(`/interview-user/${appUserId}`)
+    }
+    const fetchJobApplicationsList = async () => {
+      try {
+        const response = await axios.get(
+          'http://localhost:5094/api/Candidature/GetCandidaturesByUSer',
+          {
+            headers: {
+              Authorization: `Bearer ${jwtToken}`
+            },
+            withCredentials: true
+          }
+        )
+        JobApplications.value = response.data
+        return response
+      } catch (error) {
+        return error
+      }
+    }
+
+    fetchJobApplicationsList()
+
+    const downloadCv = async (cvFileName: string) => {
+      await axios
+        .get(`http://localhost:5094/api/Candidature/download/${cvFileName}`, {
+          responseType: 'blob'
+        })
+        .then((response) => {
+          const url = window.URL.createObjectURL(new Blob([response.data]))
+          const link = document.createElement('a')
+          link.href = url
+          link.setAttribute('download', cvFileName)
+          document.body.appendChild(link)
+          link.click()
+        })
+        .catch((error) => {
+          console.error('Error downloading CV:', error)
+        })
+    }
+    const handleDelete = async (appUserId: string, offreId: number) => {
+      Swal.fire({
+        title: 'Êtes-vous sûr ?',
+        text: 'Cette action est irréversible!',
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#3085d6',
+        cancelButtonColor: '#d33',
+        confirmButtonText: 'Oui, supprimer!'
+      }).then(async (result) => {
+        if (result.isConfirmed) {
+          try {
+            // Appel à l'API avec les paramètres nécessaires
+            const response = await axios.delete(
+              `http://localhost:5094/api/Candidature/Delete/${appUserId}/${offreId}`,
+              {
+                headers: {
+                  Authorization: `Bearer ${jwtToken}`
+                },
+                withCredentials: true
+              }
+            )
+            Swal.fire({
+              icon: 'success',
+              title: 'Candidature supprimée avec succès!',
+              showConfirmButton: false,
+              timer: 1500
+            })
+            await fetchJobApplicationsList() // Mise à jour de la liste après suppression
+            return response
+          } catch (error) {
+            Swal.fire({
+              icon: 'error',
+              title: 'Une erreur est survenue lors de la suppression!',
+              showConfirmButton: false,
+              timer: 1500
+            })
+            console.error('Error deleting application:', error)
+            return error
+          }
+        }
+      })
+    }
+    onMounted(() => {
+      fetchUser()
+    })
+    return {
+      JobApplications,
+      formatDate,
+      state,
+      interview,
+      fetchJobApplicationsList,
+      handleDelete,
+      downloadCv,
+      handleRowClick,
+      fetchUser
+    }
+  }
+}
+</script>
+<template>
+   <div class="container-xxl bg-white p-0">
+    <NavbarShow :currentAdmin="state.currentUser" />
+    <div
+      class="container-xxl py-5 wow fadeInUp"
+      data-wow-delay="0.1s"
+      style="visibility: visible; animation-delay: 0.1s; animation-name: fadeInUp"
+    >
+      <div class="container">
+        <h1
+          class="text-center mb-5 wow fadeInUp"
+          data-wow-delay="0.1s"
+          style="visibility: visible; animation-delay: 0.1s; animation-name: fadeInUp"
+        >
+          Your Job applications
+        </h1>
+        <hr />
+        <div class="row gy-5 gx-4">
+          <div class="col-lg-8">
+            <div class="d-flex align-items-center mb-5">
+              <img
+                class="flex-shrink-0 img-fluid border rounded"
+                src="/src/assets/img/user.png"
+                alt=""
+                style="width: 80px; height: 80px"
+              />
+              <div class="text-start ps-4">
+                <h3 class="mb-4">{{ state.currentUser.userName }}</h3>
+              </div>
+            </div>
+            <hr />
+            <div class="mb-5">
+              <div
+                class="bg-light rounded p-5 mb-4 wow slideInUp"
+                data-wow-delay="0.1s"
+                style="visibility: visible; animation-delay: 0.1s; animation-name: slideInUp"
+              >
+              <div class="col" v-for="jobApp in JobApplications" :key="jobApp.id">
+              {{ console.log(jobApp) }}
+              <div class="job-item p-4 mb-4">
+                <div class="d-flex align-items-center">
+                  <div class="text-start ps-1 flex-grow-1">
+                    <h5 class="mb-3">{{ jobApp.offre.titre }}</h5>
+                    <span class="text-truncate me-3"
+                      ><i class="fa fa-map-marker text-primary me-2"></i
+                      >{{ jobApp.offre.lieu }}</span
+                    >
+                    <span class="text-truncate me-3"
+                      ><i class="far fa-clock text-primary me-2"></i
+                      >{{ jobApp.offre.contractType }}</span
+                    >
+                    <span class="text-truncate me-3"
+                      ><i class="far fa-calendar-alt text-primary me-2"></i>Applied On :
+                      {{ formatDate(jobApp.offre.dateDebut) }}
+                    </span>
+                  </div>
+                 
+                    <span class="text-truncate me-3"
+                    @click="handleRowClick(jobApp.appUserId, jobApp.offreId)">
+                      <i class="far fa fa-eye icon-eye text-primary me-2"></i> </span
+                  >
+
+                  <span
+                    class="text-truncate me-3"
+                    @click="handleDelete(jobApp.appUserId, jobApp.offreId)"
+                  >
+                    <i class="far fa-trash-alt text-primary me-2"></i>
+                  </span>
+                </div>
+              </div>
+            </div>
+              </div>
+            </div>
+          </div>
+          <div class="col-lg-4">
+            <div
+              class="bg-light rounded p-5 wow slideInUp"
+              data-wow-delay="0.1s"
+              style="visibility: visible; animation-delay: 0.1s; animation-name: slideInUp"
+            >
+              <h4 class="mb-4 text-left">Actions</h4>
+              <p class="m-0 text-left">
+                <i class="fa fa-angle-right text-primary me-2"></i>
+                <router-link class="btn btn-link" to="/job-applicationsC"
+                  >Job applications</router-link
+                >
+              </p>
+              <p class="m-0 text-left">
+                <i class="fa fa-angle-right text-primary me-2"></i>
+                <button class="btn btn-link"  @click="interview(state.currentUser.Id)">Interviews</button>
+              </p>
+            </div>
+            <div class="col-lg-12"><hr /></div>
+            
+           
+          </div>
+        </div>
+      </div>
+    </div>
+    <FooterShow />
+  </div>
+</template>
+
+<style scoped>
+.text-left {
+  text-align: left;
+}</style>

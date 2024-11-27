@@ -37,7 +37,7 @@ namespace backen_dotnet.Repository
 
         public async Task<List<Offre>> GetAllAsync()
         {
-           return await _context.Offres.ToListAsync();
+           return await _context.Offres.Include(o => o.Candidatures).ToListAsync();
         }
 
         public async Task<Offre?> GetByIdAsync(int id)
@@ -71,6 +71,7 @@ namespace backen_dotnet.Repository
             existingOffre.Departement = offreDto.Departement;
             existingOffre.Lieu = offreDto.Lieu;
             existingOffre.ContractType = offreDto.ContractType;
+            existingOffre.ContractDuration = offreDto.ContractDuration;
             existingOffre.Gender = offreDto.Gender;
             existingOffre.NiveauEtudesRequis = offreDto.NiveauEtudesRequis;
             existingOffre.EstActive = offreDto.EstActive;
@@ -88,17 +89,32 @@ namespace backen_dotnet.Repository
         {
             return await _context.Offres.Where(offre => !offre.EstStage).ToListAsync();
         }
+
         public async Task<List<Offre>> GetOffresByDepartementAsync(string departement)
         {
             return await _context.Offres
                 .Where(o => o.Departement == departement)
                 .ToListAsync();
         }
+
         public async Task<List<string>> GetDepartementsAsync()
         {
             return await _context.Offres
                 .Select(o => o.Departement)
                 .Distinct()
+                .ToListAsync();
+        }
+        public async Task<List<string>> GetContractTypesAsync()
+        {
+            return await _context.Offres
+                .Select(o => o.ContractDuration)
+                .Distinct()
+                .ToListAsync();
+        }
+        public async Task<List<Offre>> GetOffresByContractTypeAsync(string contracttype)
+        {
+            return await _context.Offres
+                .Where(o => o.ContractDuration == contracttype)
                 .ToListAsync();
         }
     }

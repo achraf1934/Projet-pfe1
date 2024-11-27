@@ -273,10 +273,25 @@ namespace backen_dotnet.Controllers
             return Ok(UserModel);
         }
         [HttpGet("GetAllUsers")]
-        public async Task<IActionResult> GetAllUsers()
+        public async Task<IActionResult> GetAllUsers([FromQuery] string? username)
         {
-            var offres = await _userRepository.GetAllAsync();
-            return Ok(offres);
+            var users = await _userManager.Users.ToListAsync();
+
+            if (!string.IsNullOrEmpty(username))
+            {
+                users = users
+                    .Where(u => u.UserName.Contains(username, StringComparison.OrdinalIgnoreCase))
+                    .ToList();
+            }
+
+            var userDtos = users.Select(user => new NewUserDto
+            {
+                UserName = user.UserName,
+                Email = user.Email,
+                DateCreated = user.DateCreated
+            });
+
+            return Ok(userDtos);
         }
 
         [HttpDelete("DeleteUser/{id}")]

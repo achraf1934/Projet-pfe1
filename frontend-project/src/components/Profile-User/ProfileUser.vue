@@ -64,6 +64,16 @@ export default {
       }
     }
     const deleteUser = async (id: string) => {
+      Swal.fire({
+        title: 'Are you sure ?',
+        text: 'This action is irreversible!',
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#3085d6',
+        cancelButtonColor: '#d33',
+        confirmButtonText: 'Yes, delete!'
+      }).then(async (result) => {
+        if (result.isConfirmed) {
       try {
         const response = await axios.delete(`http://localhost:5094/api/Account/DeleteUser/${id}`)
         logout()
@@ -83,6 +93,8 @@ export default {
         })
         return error
       }
+    }
+    })
     }
     const editProfile = (appUserId: string) => {
       router.push(`/edit-profile/${appUserId}`)

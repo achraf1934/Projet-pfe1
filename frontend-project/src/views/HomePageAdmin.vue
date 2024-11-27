@@ -14,7 +14,7 @@ export default {
     LinearChart
   },
   setup() {
-    const jwtToken = localStorage.getItem('jwtToken')
+    const jwtToken = sessionStorage.getItem('jwtToken')
 
     const fetchUser = async () => {
       try {

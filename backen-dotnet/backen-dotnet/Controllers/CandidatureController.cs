@@ -7,6 +7,7 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Newtonsoft.Json;
 using Microsoft.EntityFrameworkCore;
+using backen_dotnet.Dtos.JobApp;
 namespace backen_dotnet.Controllers
 {
     [Route("api/[controller]")]
@@ -18,12 +19,13 @@ namespace backen_dotnet.Controllers
         private readonly ICandidatureRepository _candidatureRepository;
         private readonly IOffreRepository _offreRepository;
         private readonly IMailService _mailService;
-
+        private readonly ApplicationDbContext _context;
         public CandidatureController(UserManager<AppUser> userManager,
                                      IHttpContextAccessor httpContextAccessor,
                                      ICandidatureRepository candidatureRepository,
                                      IOffreRepository offreRepository,
-                                     IMailService mailService)
+                                     IMailService mailService,
+                                     ApplicationDbContext context)
         {
 
             _userManager = userManager;
@@ -31,6 +33,7 @@ namespace backen_dotnet.Controllers
             _candidatureRepository = candidatureRepository;
             _offreRepository = offreRepository;
             _mailService = mailService;
+            _context = context;
         }
         [HttpPost]
         [Route("SendMail")]
@@ -168,7 +171,7 @@ namespace backen_dotnet.Controllers
                 {
                     FromEmail = "chrouf.est@gmail.com",
                     ToEmails = appUser.Email,
-                    Subject = "Thanks For Applying To"+ offre.Titre,
+                    Subject = "Thanks For Applying To "+ offre.Titre,
                     Body = "We have received your application for the " +
                     offre.Titre +
                     " position and will give it careful consideration." +
@@ -283,5 +286,42 @@ namespace backen_dotnet.Controllers
           
             return Ok(candidature);
         }
+        [HttpGet("GetCandidaturesStats")]
+        public async Task<IActionResult> GetCandidaturesStats()
+        {
+            var stats = await _offreRepository.GetAllAsync();
+            var result = stats.Select(offre => new CandidatureStats
+            {
+                OffreTitre = offre.Titre,
+                CandidatureCount = offre.Candidatures.Count
+            });
+
+            return Ok(result);
+        }
+        [HttpGet("GetCandidaturesByMonth")]
+        public async Task<IActionResult> GetCandidaturesByMonth()
+        {
+            var candidatures = await _candidatureRepository.GetAllAsync();
+            var groupedData = candidatures
+                .GroupBy(c => new { c.AplliedDate.Year, c.AplliedDate.Month })
+                .Select(g => new
+                {
+                    Year = g.Key.Year,
+                    Month = g.Key.Month,
+                    CandidatureCount = g.Count()
+                })
+                .OrderBy(g => g.Year).ThenBy(g => g.Month)
+                .ToList();
+
+            return Ok(groupedData);
+        }
+        [HttpGet("HasApplied/{userId}/{offreId}")]
+        public IActionResult HasApplied(string userId, int offreId)
+        {
+            var hasApplied = _context.Candidatures.Any(c => c.AppUserId == userId && c.OffreId == offreId);
+            return Ok(hasApplied);
+        }
+
+
     }
 }

@@ -24,6 +24,7 @@ namespace backen_dotnet.Mappers
                 Departement = offerModel.Departement,
                 Lieu = offerModel.Lieu,
                 ContractType = offerModel.ContractType,
+                ContractDuration = offerModel.ContractDuration,
                 Gender = offerModel.Gender,
                 NiveauEtudesRequis = offerModel.NiveauEtudesRequis,
                 EstActive = offerModel.EstActive,
@@ -46,6 +47,8 @@ namespace backen_dotnet.Mappers
                 Departement= offreDto.Departement,
                 Lieu= offreDto.Lieu,
                 ContractType = offreDto.ContractType,
+                ContractDuration = offreDto.ContractDuration,
+
                 Gender = offreDto.Gender,
                 NiveauEtudesRequis = offreDto.NiveauEtudesRequis,
                 EstActive= offreDto.EstActive,

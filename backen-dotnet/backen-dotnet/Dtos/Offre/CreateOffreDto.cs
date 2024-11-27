@@ -17,6 +17,8 @@ namespace backen_dotnet.Dtos.Offre
         public string Departement { get; set; }
         public string Lieu { get; set; }
         public string ContractType { get; set; }
+        public string? ContractDuration { get; set; }
+
         public string Gender { get; set; }
         public string NiveauEtudesRequis { get; set; }
         public bool EstActive { get; set; }

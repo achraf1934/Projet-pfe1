@@ -1,10 +1,11 @@
 <script lang="ts">
 import SidebarShow from '../Sidebar/SidebarShow.vue'
-import { onMounted, reactive, ref } from 'vue'
+import { computed, onMounted, reactive, ref } from 'vue'
 import axios from 'axios'
 import Swal from 'sweetalert2'
 import router from '../../../router'
 import NavbarAdmin from '../../navbar-admin/NavbarAdmin.vue'
+import { debounce } from 'lodash'
 
 export default {
   name: 'CandidatesList',
@@ -22,12 +23,42 @@ export default {
       password: '',
       phoneNumber: ''
     })
+    const searchQuery = ref<string>('')
     const jwtToken = localStorage.getItem('jwtToken')
 
     const Candidates = ref<any[]>([])
-    const fetchUsersList = async () => {
+    const currentPage = ref(1)
+    const itemsPerPage = 4
+    // Calculer les candidats paginés
+    const paginatedCandidates = computed(() => {
+      const startIndex = (currentPage.value - 1) * itemsPerPage
+      const endIndex = startIndex + itemsPerPage
+      return Candidates.value.slice(startIndex, endIndex)
+    })
+    const filterCandidates = () => {
+  if (searchQuery.value.trim() === '') {
+    // Si le champ est vide, afficher tous les candidats
+    fetchUsersList()
+  } else {
+    Candidates.value = Candidates.value.filter((candidate) =>
+      candidate.userName.toLowerCase().includes(searchQuery.value.toLowerCase())
+    )
+  }
+}
+    const totalPages = computed(() => Math.ceil(Candidates.value.length / itemsPerPage))
+    const debounceFilter = debounce(filterCandidates, 300)
+    const onSearchInput = (e: Event) => {
+  searchQuery.value = (e.target as HTMLInputElement).value
+  debounceFilter()
+}
+    const changePage = (page: number) => {
+      if (page >= 1 && page <= totalPages.value) {
+        currentPage.value = page
+      }
+    }
+    const fetchUsersList = async (username: string = '') => {
       try {
-        const response = await axios.get('http://localhost:5094/api/Account/GetAllUsers')
+        const response = await axios.get(`http://localhost:5094/api/Account/GetAllUsers?username=${username}`)
         Candidates.value = response.data
         return response
       } catch (error) {
@@ -113,7 +144,14 @@ export default {
       handleDelete,
       Candidates,
       submit,
-      data
+      data,
+      currentPage,
+      paginatedCandidates,
+      changePage,
+      totalPages,
+      searchQuery,
+      filterCandidates,
+      onSearchInput
     }
   }
 }
@@ -128,7 +166,9 @@ export default {
       <div class="content-wrapper">
         <div class="d-xl-flex justify-content-between align-items-start">
           <h2 class="text-dark font-weight-bold mb-2">Candidates overview</h2>
-        </div>  <hr>
+        </div>
+
+        <hr />
         <div class="row">
           <div class="col-md-12">
             <div
@@ -166,11 +206,25 @@ export default {
                 role="tabpanel"
                 aria-labelledby="business-tab"
               >
+                <div class="form-group">
+                  <label for="searchInput">Search by Username</label>
+                  <input
+                    type="text"
+                    style="width: 300px;"
+                    id="searchInput"
+                    class="form-control"
+                    placeholder="Enter username"
+                    v-model="searchQuery"
+                     @input="onSearchInput"
+                  />
+                </div>
+
                 <div class="row">
                   <div class="col-xl-12 col-lg-6 col-sm-6 grid-margin stretch-card">
                     <div class="card">
                       <div class="card-body">
                         <h4 class="card-title">Candidates list</h4>
+
                         <table class="table">
                           <thead>
                             <tr>
@@ -181,7 +235,7 @@ export default {
                             </tr>
                           </thead>
                           <tbody>
-                            <tr v-for="candidate in Candidates" :key="candidate.id">
+                            <tr v-for="candidate in paginatedCandidates" :key="candidate.id">
                               <td>{{ candidate.userName }}</td>
                               <td>{{ candidate.email }}</td>
                               <td>{{ formatDate(candidate.dateCreated) }}</td>
@@ -196,6 +250,29 @@ export default {
                             </tr>
                           </tbody>
                         </table>
+                        <!--pagination---->
+                        <div class="pagination">
+                          <button
+                            @click="changePage(currentPage - 1)"
+                            :disabled="currentPage === 1"
+                          >
+                            Previous
+                          </button>
+                          <button
+                            v-for="page in totalPages"
+                            :key="page"
+                            :class="{ active: page === currentPage }"
+                            @click="changePage(page)"
+                          >
+                            {{ page }}
+                          </button>
+                          <button
+                            @click="changePage(currentPage + 1)"
+                            :disabled="currentPage === totalPages"
+                          >
+                            Next
+                          </button>
+                        </div>
                       </div>
                     </div>
                   </div>
@@ -258,4 +335,29 @@ export default {
     </div>
   </div>
 </template>
-<style scoped></style>
+<style scoped>
+.pagination {
+  display: flex;
+  gap: 10px;
+  margin-top: 20px;
+  justify-content: center;
+}
+
+.pagination button {
+  padding: 5px 10px;
+  border: 1px solid #ccc;
+  background: #fff;
+  cursor: pointer;
+}
+
+.pagination button.active {
+  background: #007bff;
+  color: #fff;
+  font-weight: bold;
+}
+
+.pagination button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+</style>

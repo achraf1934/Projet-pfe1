@@ -19,6 +19,10 @@ namespace backen_dotnet.Repository
             await _context.SaveChangesAsync();  
             return candidature;
         }
+        public async Task<List<Candidature>> GetAllAsync()
+        {
+            return await _context.Candidatures.ToListAsync();
+        }
 
         public async Task<List<Candidature>> GetCandidaturesByOffer(Offre offre)
         {
@@ -87,6 +91,7 @@ namespace backen_dotnet.Repository
                Departement = c.Offre.Departement,
                Lieu = c.Offre.Lieu,
                ContractType = c.Offre.ContractType,
+               ContractDuration = c.Offre.ContractDuration,
                Gender = c.Offre.Gender,
                NiveauEtudesRequis = c.Offre.NiveauEtudesRequis,
                EstActive = c.Offre.EstActive,
@@ -120,6 +125,7 @@ namespace backen_dotnet.Repository
                     Departement = offre.Offre.Departement,
                     Lieu = offre.Offre.Lieu,
                     ContractType = offre.Offre.ContractType,
+                    ContractDuration = offre.Offre.ContractDuration,
                     Gender = offre.Offre.Gender,
                     NiveauEtudesRequis = offre.Offre.NiveauEtudesRequis,
                     EstActive = offre.Offre.EstActive,

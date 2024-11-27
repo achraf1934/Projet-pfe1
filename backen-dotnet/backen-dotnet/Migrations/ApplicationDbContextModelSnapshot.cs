@@ -278,7 +278,6 @@ namespace backen_dotnet.Migrations
                         .HasColumnType("datetime2");
 
                     b.Property<string>("Link")
-                        .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<int>("OffreId")
@@ -307,6 +306,9 @@ namespace backen_dotnet.Migrations
 
                     b.Property<string>("Benefits")
                         .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("ContractDuration")
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("ContractType")

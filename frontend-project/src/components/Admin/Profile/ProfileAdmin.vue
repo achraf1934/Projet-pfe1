@@ -18,7 +18,7 @@ export default {
         dateCreated: new Date()
       }
     })
-    const jwtToken = localStorage.getItem('jwtToken')
+    const jwtToken = sessionStorage.getItem('jwtToken')
     const fetchUser = async () => {
       try {
         const response = await axios.get(`http://localhost:5094/api/Account/user`, {

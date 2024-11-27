@@ -12,6 +12,6 @@
         public DateTime AppointmentDateTime { get; set; }  
 
         public string Status { get; set; }
-        public string Link { get; set; }
+        public string? Link { get; set; }
     }
 }

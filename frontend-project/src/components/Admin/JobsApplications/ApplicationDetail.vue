@@ -72,6 +72,15 @@ export default {
     }
     // Méthode pour mettre à jour la décision de candidature
     const updateDecision = async (decision: string) => {
+      Swal.fire({
+        title: 'Are you sure?',
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#3085d6',
+        cancelButtonColor: '#d33',
+        confirmButtonText: 'Yes!'
+      }).then(async (result) => {
+        if (result.isConfirmed) {
       try {
         await axios.put(
           `http://localhost:5094/api/Candidature/update-decision/${appUserId}/${offreId}`,
@@ -100,6 +109,8 @@ export default {
         console.error(`Erreur lors de la mise à jour de la décision : ${error}`)
         alert('Erreur lors de la mise à jour de la décision')
       }
+    }
+  })
     }
 
     const acceptApplication = () => updateDecision('Accepted')

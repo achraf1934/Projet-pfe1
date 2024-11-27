@@ -18,20 +18,37 @@
 import { computed, defineComponent, ref } from 'vue'
 import { DoughnutChart, useDoughnutChart } from 'vue-chart-3'
 import { Chart, type ChartData, type ChartOptions, registerables } from 'chart.js'
+import axios from 'axios'
 
 Chart.register(...registerables)
 export default defineComponent({
   name: 'App',
   components: { DoughnutChart },
   setup() {
-    const dataValues = ref([30, 40, 60, 70, 5])
-    const dataLabels = ref([
-      'Web developement',
-      'Mobile developement',
-      'Integration system',
-      'DevOps',
-      'Others'
-    ])
+    const dataValues = ref<number[]>([]) // Initialise avec un tableau vide
+    const dataLabels = ref<string[]>([])
+    const fetchStats = async () => {
+      try {
+    const response = await axios.get('http://localhost:5094/api/Candidature/GetCandidaturesStats');
+    const stats = response.data;
+
+    // Vérifie la structure des données retournées
+    console.log("Graphic", stats); // Ceci devrait afficher un tableau d'objets CandidatureStats
+
+    // Mise à jour des variables réactives
+    dataValues.value = stats.map((stat: { candidatureCount: number }) => stat.candidatureCount);
+    dataLabels.value = stats.map((stat: { offreTitre: string }) => stat.offreTitre);
+
+    // Vérifie après l'affectation pour voir si les données sont bien mises à jour
+    console.log("dataValues", dataValues.value);
+    console.log("dataLabels", dataLabels.value);
+} catch (error) {
+    console.error('Erreur lors de la récupération des statistiques:', error);
+}
+    }
+
+    // Appel initial pour charger les données
+    fetchStats()
     const toggleLegend = ref(true)
 
     const testData = computed<ChartData<'doughnut'>>(() => ({
@@ -54,8 +71,7 @@ export default defineComponent({
       plugins: {
         legend: {
           position: toggleLegend.value ? 'top' : 'bottom'
-        },
-        
+        }
       }
     }))
 

@@ -1,5 +1,5 @@
 <script lang="ts">
-import { onMounted, reactive, ref } from 'vue'
+import { computed, onMounted, reactive, ref } from 'vue'
 import FooterShow from '../footer/FooterShow.vue'
 import NavbarShow from '../navbar/NavbarShow.vue'
 import axios from 'axios'
@@ -17,6 +17,19 @@ export default {
     const jwtToken = sessionStorage.getItem('jwtToken')
     const router = useRouter()
     const route = useRoute()
+
+    const currentPage = ref(1) // Page actuelle
+    const itemsPerPage = 5 // Nombre d'offres par page
+    const paginatedJobs = computed(() =>
+      Interviews.value.slice(
+        (currentPage.value - 1) * itemsPerPage,
+        currentPage.value * itemsPerPage
+      )
+    )
+    const changePage = (page: number) => {
+      currentPage.value = page
+    }
+    const totalPages = computed(() => Math.ceil(Interviews.value.length / itemsPerPage))
 
     const fetchUser = async () => {
       try {
@@ -142,7 +155,11 @@ export default {
       fetchInterviewsList,
       handleDelete,
       handleRowClick,
-      fetchUser
+      fetchUser,
+      currentPage,
+      paginatedJobs,
+      changePage,
+      totalPages
     }
   }
 }
@@ -161,7 +178,7 @@ export default {
           data-wow-delay="0.1s"
           style="visibility: visible; animation-delay: 0.1s; animation-name: fadeInUp"
         >
-          Your Job applications
+          Your Interviews
         </h1>
         <hr />
         <div class="row gy-5 gx-4">
@@ -195,28 +212,24 @@ export default {
                           ><i class="far fa-calendar-alt text-primary me-2"></i>Date:
                           {{ new Date(interview.appointmentDateTime).toLocaleString() }}
                         </span>
-                        <div class="text-start ps-1 flex-grow-1 text-left"   v-if="interview.link">
-                        <a
-                          class="btn btn-link"
-                          :href="interview.link"
-                          target="_blank"
-                          rel="noopener noreferrer"
-                        
-                        >
-                     
-                            <h6 class="text-primary text-left"><br></h6>
+                        <div class="text-start ps-1 flex-grow-1 text-left" v-if="interview.link">
+                          <a
+                            class="btn btn-link"
+                            :href="interview.link"
+                            target="_blank"
+                            rel="noopener noreferrer"
+                          >
+                            <h6 class="text-primary text-left"><br /></h6>
                             {{ interview.link }}
-                       
-                        </a>
+                          </a>
                         </div>
                         <div class="text-start ps-1 flex-grow-1" v-else>
-                            <a class="text-truncate me-3"  >
-                                <h6 class="text-primary text-left"><br></h6>
+                          <a class="text-truncate me-3">
+                            <h6 class="text-primary text-left"><br /></h6>
 
-                          <h6 class="text-primary text-left">No link yet !</h6>
-                        </a>
-                            </div>
-                       
+                            <h6 class="text-primary text-left">No link yet !</h6>
+                          </a>
+                        </div>
                       </div>
 
                       <span class="text-truncate me-3">
@@ -231,6 +244,26 @@ export default {
                       </span>
                     </div>
                   </div>
+                </div>
+                <!--pagination-->
+                <div class="pagination">
+                  <button :disabled="currentPage === 1" @click="changePage(currentPage - 1)">
+                    Previous
+                  </button>
+                  <button
+                    v-for="page in totalPages"
+                    :key="page"
+                    :class="{ active: page === currentPage }"
+                    @click="changePage(page)"
+                  >
+                    {{ page }}
+                  </button>
+                  <button
+                    :disabled="currentPage === totalPages"
+                    @click="changePage(currentPage + 1)"
+                  >
+                    Next
+                  </button>
                 </div>
               </div>
             </div>
@@ -268,4 +301,26 @@ export default {
 .text-left {
   text-align: left;
 }
+.pagination {
+  display: flex;
+  justify-content: center;
+  margin-top: 20px;
+  margin-block-end: 80px;
+}
+.pagination button {
+  margin: 0 5px;
+  padding: 5px 10px;
+  border: none;
+  background-color: #f0f0f0;
+  cursor: pointer;
+}
+.pagination button.active {
+  font-weight: bold;
+  background-color: #01b075;
+  color: #fff;
+}
+.pagination button:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+} 
 </style>

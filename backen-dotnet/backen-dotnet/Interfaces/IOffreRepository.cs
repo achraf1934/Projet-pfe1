@@ -15,6 +15,8 @@ namespace backen_dotnet.Interfaces
         Task<List<Offre>> GetOffreEmploisAsync();
         Task<List<Offre>> GetOffresByDepartementAsync(string departement);
         Task<List<string>> GetDepartementsAsync();
+        Task<List<string>> GetContractTypesAsync();
+        Task<List<Offre>> GetOffresByContractTypeAsync(string contracttype);
 
     }
 }

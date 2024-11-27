@@ -148,3 +148,4 @@ C:\Users\Mon Pc\Desktop\Projet-pfe\backen-dotnet\backen-dotnet\bin\Debug\net8.0\
 C:\Users\Mon Pc\Desktop\Projet-pfe\backen-dotnet\backen-dotnet\bin\Debug\net8.0\Newtonsoft.Json.Bson.dll
 C:\Users\Mon Pc\Desktop\Projet-pfe\backen-dotnet\backen-dotnet\bin\Debug\net8.0\Python.Runtime.dll
 C:\Users\Mon Pc\Desktop\Projet-pfe\backen-dotnet\backen-dotnet\bin\Debug\net8.0\DinkToPdf.dll
+C:\Users\Mon Pc\Desktop\Projet-pfe\backen-dotnet\backen-dotnet\obj\Debug\net8.0\backen-dotnet.sourcelink.json

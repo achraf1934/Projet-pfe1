@@ -1,6 +1,6 @@
 <script lang="ts">
 import SidebarShow from '../Sidebar/SidebarShow.vue'
-import { onMounted, reactive, ref } from 'vue'
+import { computed, onMounted, reactive, ref } from 'vue'
 import axios from 'axios'
 import { useRoute, useRouter } from 'vue-router'
 import NavbarShow from '../../navbar/NavbarShow.vue'
@@ -37,6 +37,24 @@ export default {
     const jwtToken = sessionStorage.getItem('jwtToken')
     const route = useRoute()
     const router = useRouter()
+
+    const currentPage = ref(1)
+    const itemsPerPage = 4
+    // Calculer les candidats paginés
+    const paginatedJobApplications = computed(() => {
+      const startIndex = (currentPage.value - 1) * itemsPerPage
+      const endIndex = startIndex + itemsPerPage
+      return JobApplications.value.slice(startIndex, endIndex)
+    })
+
+    const totalPages = computed(() => Math.ceil(JobApplications.value.length / itemsPerPage))
+
+    const changePage = (page: number) => {
+      if (page >= 1 && page <= totalPages.value) {
+        currentPage.value = page
+      }
+    }
+
     const formatDate = (date: Date) => {
       return new Date(date).toLocaleDateString('fr-FR', {
         year: 'numeric',
@@ -126,7 +144,11 @@ export default {
       JobApplications,
       fetchJobApplications,
       handleRowClick,
-      formatDate
+      formatDate,
+      currentPage,
+      paginatedJobApplications,
+      totalPages,
+      changePage
     }
   }
 }
@@ -195,7 +217,7 @@ export default {
                       </thead>
                       <tbody>
                         <tr
-                          v-for="jobApplication in JobApplications"
+                          v-for="jobApplication in paginatedJobApplications"
                           :key="jobApplication.id"
                           @click="handleRowClick(jobApplication.appUserId, jobApplication.offreId)"
                         >
@@ -215,6 +237,29 @@ export default {
                         </tr>
                       </tbody>
                     </table>
+                    <!--pagination---->
+                    <div class="pagination">
+                          <button
+                            @click="changePage(currentPage - 1)"
+                            :disabled="currentPage === 1"
+                          >
+                            Previous
+                          </button>
+                          <button
+                            v-for="page in totalPages"
+                            :key="page"
+                            :class="{ active: page === currentPage }"
+                            @click="changePage(page)"
+                          >
+                            {{ page }}
+                          </button>
+                          <button
+                            @click="changePage(currentPage + 1)"
+                            :disabled="currentPage === totalPages"
+                          >
+                            Next
+                          </button>
+                        </div>
                   </div>
                 </div>
               </div>

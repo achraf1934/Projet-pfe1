@@ -30,6 +30,7 @@ export default {
         Departement: '',
         Lieu: '',
         ContractType: '',
+        ContractDuration: '',
         Gender: '',
         NiveauEtudesRequis: '',
         EstActive: ''
@@ -82,9 +83,11 @@ export default {
         state.job.Departement = jobInfo.departement
         state.job.Lieu = jobInfo.lieu
         state.job.ContractType = jobInfo.contractType
+        state.job.ContractDuration = jobInfo.contractDuration
         state.job.Gender = jobInfo.gender
         state.job.NiveauEtudesRequis = jobInfo.niveauEtudesRequis
         state.job.EstActive = jobInfo.estActive
+        console.log("job",state.job)
       } catch (error) {
         Swal.fire({
           icon: 'error',
@@ -151,7 +154,17 @@ export default {
                     <i class="fa fa-angle-right text-primary me-2"></i>{{ langage }}
                   </li>
                 </ul>
+                <h4 class="card-title text-primary">Contract Duration</h4>
+                <ul class="list-unstyled">
+                  <li>
+                    <i class="fa fa-angle-right text-primary me-2"></i>{{ state.job.ContractDuration }}
+                  </li>
+                </ul>
               </div>
+            
+                <router-link class="btn btn-link btn-fw" to="/jobs-admin">Back</router-link>
+          
+             
             </div>
           </div>
         </div>

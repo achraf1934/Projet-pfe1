@@ -1,7 +1,7 @@
 <script lang="ts">
 import FooterShow from '../footer/FooterShow.vue'
 import NavbarShow from '../navbar/NavbarShow.vue'
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, computed } from 'vue'
 import axios from 'axios'
 import Swal from 'sweetalert2'
 
@@ -15,7 +15,109 @@ export default {
     const jobs = ref<any[]>([])
     const jobsOffer = ref<any[]>([])
     const interships = ref<any[]>([])
+    //Page actuelle
+    const currentPage = ref(1)
+    const currentPageI = ref(1)
+    const currentPageJ = ref(1)
+    //filtreDepartment
+    const Departments = ref<string[]>([])
+    const selectedDepartment = ref<string>('')
 
+    const selectedContractDuration = ref<string>('')
+    const ContractDurations = ref<string[]>(['CDD', 'CDI', 'Internship'])
+
+    const itemsPerPage = 3 // Nombre d'offres par page
+    const searchKeyword = ref<string>('')
+    const applySearch = () => {
+      currentPage.value = 1 // Réinitialiser à la première page
+    }
+
+    const paginatedJobs = computed(() =>
+      filteredAlls.value.slice(
+        (currentPage.value - 1) * itemsPerPage,
+        currentPage.value * itemsPerPage
+      )
+    )
+    const paginatedIntership = computed(() =>
+      filteredInterships.value.slice(
+        (currentPage.value - 1) * itemsPerPage,
+        currentPage.value * itemsPerPage
+      )
+    )
+    const paginatedJ = computed(() =>
+      filteredJobs.value.slice(
+        (currentPage.value - 1) * itemsPerPage,
+        currentPage.value * itemsPerPage
+      )
+    )
+
+    const changePage = (page: number) => {
+      currentPage.value = page
+    }
+    const changePageI = (page: number) => {
+      currentPageI.value = page
+    }
+    const changePageJ = (page: number) => {
+      currentPageJ.value = page
+    }
+    const totalPages = computed(() => Math.ceil(jobs.value.length / itemsPerPage))
+    const totalPagesI = computed(() => Math.ceil(interships.value.length / itemsPerPage))
+    const totalPagesJ = computed(() => Math.ceil(jobsOffer.value.length / itemsPerPage))
+
+    const fetchDepartments = async () => {
+      try {
+        const response = await axios.get('http://localhost:5094/api/Offre/departements')
+        Departments.value = response.data
+      } catch (error) {
+        console.error('Erreur lors de la récupération des départements:', error)
+      }
+    }
+
+    const filteredJobs = computed(() =>
+      jobsOffer.value.filter((jobsOffer) => {
+        const matchesDepartment =
+          !selectedDepartment.value || jobsOffer.departement === selectedDepartment.value
+
+        const matchesContractDuration =
+          !selectedContractDuration.value ||
+          jobsOffer.contractDuration === selectedContractDuration.value
+
+        const matchesSearch =
+          !searchKeyword.value ||
+          jobsOffer.titre.toLowerCase().includes(searchKeyword.value.toLowerCase())
+        return matchesDepartment && matchesSearch && matchesContractDuration
+      })
+    )
+    const filteredInterships = computed(() =>
+      interships.value.filter((intership) => {
+        const matchesDepartment =
+          !selectedDepartment.value || intership.departement === selectedDepartment.value
+
+        const matchesContractDuration =
+          !selectedContractDuration.value ||
+          intership.contractDuration === selectedContractDuration.value  
+
+        const matchesSearch =
+          !searchKeyword.value ||
+          intership.titre.toLowerCase().includes(searchKeyword.value.toLowerCase())
+        return matchesDepartment && matchesSearch &&matchesContractDuration
+      })
+    )
+    const filteredAlls = computed(() => {
+      return jobs.value.filter((job) => {
+        const matchesDepartment =
+          !selectedDepartment.value || job.departement === selectedDepartment.value
+
+        const matchesContractDuration =
+          !selectedContractDuration.value ||
+          job.contractDuration === selectedContractDuration.value  
+
+        const matchesSearch =
+          !searchKeyword.value ||
+          job.titre.toLowerCase().includes(searchKeyword.value.toLowerCase())
+        return matchesDepartment && matchesSearch && matchesContractDuration
+      })
+    })
     const formatDate = (date: Date) => {
       return new Date(date).toLocaleDateString('fr-FR', {
         year: 'numeric',
@@ -87,6 +189,7 @@ export default {
       await fetchjobList()
       await fetchjobOfferList()
       await fetchIntershipList()
+      await fetchDepartments()
     })
 
     return {
@@ -97,7 +200,25 @@ export default {
       fetchjobList,
       handleDelete,
       fetchjobOfferList,
-      fetchIntershipList
+      fetchIntershipList,
+      paginatedJobs,
+      changePage,
+      changePageI,
+      changePageJ,
+      totalPages,
+      totalPagesI,
+      totalPagesJ,
+      currentPage,
+      currentPageI,
+      currentPageJ,
+      paginatedIntership,
+      paginatedJ,
+      Departments,
+      selectedDepartment,
+      searchKeyword,
+      applySearch,
+      selectedContractDuration,
+      ContractDurations
     }
   }
 }
@@ -114,7 +235,58 @@ export default {
           style="visibility: visible; animation-delay: 0.1s; animation-name: fadeInUp"
         >
           Job Listing
-        </h1><hr>
+        </h1>
+        <!--recherche-->
+        <div
+          class="container-fluid bg-primary mb-5 wow fadeIn"
+          data-wow-delay="0.1s"
+          style="padding: 35px; visibility: visible; animation-delay: 0.1s; animation-name: fadeIn"
+        >
+          <div class="container">
+            <div class="row g-2">
+              <div class="col-md-10">
+                <div class="row g-2">
+                  <div class="col-md-4">
+                    <input 
+                      style="width: 300px"
+                      id="searchInput"
+                      class="form-control"
+                      placeholder="Keyword"
+                      v-model="searchKeyword"
+                    />
+                  </div>
+                  <div class="col-md-4">
+                    <select class="form-select border-0" v-model="selectedDepartment">
+                      <option value="">All Departments</option>
+                      <option
+                        v-for="department in Departments"
+                        :key="department"
+                        :value="department"
+                      >
+                        {{ department }}
+                      </option>
+                    </select>
+                  </div>
+                  <div class="col-md-4">
+                    <select class="form-select border-0" v-model="selectedContractDuration">
+                      <option value="">Contract Duration</option>
+                      <option
+                        v-for="contractDuration in ContractDurations"
+                        :key="contractDuration"
+                        :value="contractDuration"
+                      >
+                        {{ contractDuration }}
+                      </option>
+                    </select>
+                  </div>
+                </div>
+              </div>
+              
+            </div>
+          </div>
+        </div>
+        <!-- End recherche-->
+        <hr />
         <div
           class="tab-class text-center wow fadeInUp"
           data-wow-delay="0.3s"
@@ -151,14 +323,18 @@ export default {
           </ul>
           <div class="tab-content">
             <div id="tab-1" class="tab-pane fade show p-0 active">
-              <div class="job-item p-4 mb-4" v-for="job in jobs" :key="job.id">
+              <div class="job-item p-4 mb-4" v-for="job in paginatedJobs" :key="job.id">
                 <div class="row g-4">
                   <div class="col-sm-12 col-md-8 d-flex align-items-center">
                     <div class="text-start ps-4">
                       <h5 class="mb-3">{{ job.titre }}</h5>
-                      jobsOffer
+
                       <span class="text-truncate me-3"
                         ><i class="fa fa-map-marker text-primary me-2"></i>{{ job.lieu }}</span
+                      >
+                      <span class="text-truncate me-3"
+                        ><i class="fa fa-book text-primary me-2"></i
+                        >{{ job.niveauEtudesRequis }}</span
                       >
                       <span class="text-truncate me-3"
                         ><i class="far fa-clock text-primary me-2"></i>{{ job.contractType }}</span
@@ -169,7 +345,6 @@ export default {
                     class="col-sm-12 col-md-4 d-flex flex-column align-items-start align-items-md-end justify-content-center"
                   >
                     <div class="d-flex mb-3">
-                      
                       <router-link class="btn btn-primary" :to="`/jobDetail/${job.id}`"
                         >Apply Now</router-link
                       >
@@ -181,9 +356,25 @@ export default {
                   </div>
                 </div>
               </div>
+              <div class="pagination">
+                <button :disabled="currentPage === 1" @click="changePage(currentPage - 1)">
+                  Previous
+                </button>
+                <button
+                  v-for="page in totalPages"
+                  :key="page"
+                  :class="{ active: page === currentPage }"
+                  @click="changePage(page)"
+                >
+                  {{ page }}
+                </button>
+                <button :disabled="currentPage === totalPages" @click="changePage(currentPage + 1)">
+                  Next
+                </button>
+              </div>
             </div>
             <div id="tab-2" class="tab-pane fade show p-0">
-              <div class="job-item p-4 mb-4" v-for="jobOffer in jobsOffer" :key="jobOffer.id">
+              <div class="job-item p-4 mb-4" v-for="jobOffer in paginatedJ" :key="jobOffer.id">
                 <div class="row g-4">
                   <div class="col-sm-12 col-md-8 d-flex align-items-center">
                     <div class="text-start ps-4">
@@ -192,7 +383,8 @@ export default {
                         ><i class="fa fa-map-marker text-primary me-2"></i>{{ jobOffer.lieu }}</span
                       >
                       <span class="text-truncate me-3"
-                        ><i class="far fa-clock text-primary me-2"></i>{{ jobOffer.contractType }}</span
+                        ><i class="far fa-clock text-primary me-2"></i
+                        >{{ jobOffer.contractType }}</span
                       >
                     </div>
                   </div>
@@ -200,7 +392,6 @@ export default {
                     class="col-sm-12 col-md-4 d-flex flex-column align-items-start align-items-md-end justify-content-center"
                   >
                     <div class="d-flex mb-3">
-                      
                       <router-link class="btn btn-primary" :to="`/jobDetail/${jobOffer.id}`"
                         >Apply Now</router-link
                       >
@@ -212,18 +403,43 @@ export default {
                   </div>
                 </div>
               </div>
+              <div class="pagination">
+                <button :disabled="currentPageJ === 1" @click="changePageJ(currentPageJ - 1)">
+                  Previous
+                </button>
+                <button
+                  v-for="page in totalPagesJ"
+                  :key="page"
+                  :class="{ active: page === currentPageJ }"
+                  @click="changePageJ(page)"
+                >
+                  {{ page }}
+                </button>
+                <button
+                  :disabled="currentPageJ === totalPagesJ"
+                  @click="changePageJ(currentPageJ + 1)"
+                >
+                  Next
+                </button>
+              </div>
             </div>
             <div id="tab-3" class="tab-pane fade show p-0">
-              <div class="job-item p-4 mb-4" v-for="intership in interships" :key="intership.id">
+              <div
+                class="job-item p-4 mb-4"
+                v-for="intership in paginatedIntership"
+                :key="intership.id"
+              >
                 <div class="row g-4">
                   <div class="col-sm-12 col-md-8 d-flex align-items-center">
                     <div class="text-start ps-4">
                       <h5 class="mb-3">{{ intership.titre }}</h5>
                       <span class="text-truncate me-3"
-                        ><i class="fa fa-map-marker text-primary me-2"></i>{{ intership.lieu }}</span
+                        ><i class="fa fa-map-marker text-primary me-2"></i
+                        >{{ intership.lieu }}</span
                       >
                       <span class="text-truncate me-3"
-                        ><i class="far fa-clock text-primary me-2"></i>{{ intership.contractType }}</span
+                        ><i class="far fa-clock text-primary me-2"></i
+                        >{{ intership.contractType }}</span
                       >
                     </div>
                   </div>
@@ -231,7 +447,6 @@ export default {
                     class="col-sm-12 col-md-4 d-flex flex-column align-items-start align-items-md-end justify-content-center"
                   >
                     <div class="d-flex mb-3">
-                    
                       <router-link class="btn btn-primary" :to="`/jobDetail/${intership.id}`"
                         >Apply Now</router-link
                       >
@@ -243,6 +458,25 @@ export default {
                   </div>
                 </div>
               </div>
+              <div class="pagination">
+                <button :disabled="currentPageI === 1" @click="changePage(currentPageI - 1)">
+                  Previous
+                </button>
+                <button
+                  v-for="page in totalPagesI"
+                  :key="page"
+                  :class="{ active: page === currentPageI }"
+                  @click="changePageI(page)"
+                >
+                  {{ page }}
+                </button>
+                <button
+                  :disabled="currentPageI === totalPagesI"
+                  @click="changePage(currentPageI + 1)"
+                >
+                  Next
+                </button>
+              </div>
             </div>
           </div>
         </div>
@@ -251,4 +485,27 @@ export default {
     <FooterShow />
   </div>
 </template>
-<style></style>
+<style scoped>
+.pagination {
+  display: flex;
+  justify-content: center;
+  margin-top: 20px;
+  margin-block-end: 80px;
+}
+.pagination button {
+  margin: 0 5px;
+  padding: 5px 10px;
+  border: none;
+  background-color: #f0f0f0;
+  cursor: pointer;
+}
+.pagination button.active {
+  font-weight: bold;
+  background-color: #01b075;
+  color: #fff;
+}
+.pagination button:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+</style>

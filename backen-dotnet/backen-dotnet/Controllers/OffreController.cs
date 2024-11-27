@@ -43,6 +43,7 @@ namespace backen_dotnet.Controllers
             var offresEmplois = await _offreRepository.GetOffreEmploisAsync();
             return Ok(offresEmplois.Select(s => s.ToOfferDto()));
         }
+
         [HttpGet("ByDepartement/{departement}")]
         public async Task<IActionResult> GetOffresByDepartement([FromRoute] string departement)
         {
@@ -53,11 +54,30 @@ namespace backen_dotnet.Controllers
             }
             return Ok(offres);
         }
+
         [HttpGet("departements")]
         public async Task<IActionResult> GetDepartements()
         {
             var departements = await _offreRepository.GetDepartementsAsync();
             return Ok(departements);
+        }
+
+        [HttpGet("contracttype")]
+        public async Task<IActionResult> GetContracttype()
+        {
+            var ContractTypes = await _offreRepository.GetContractTypesAsync();
+            return Ok(ContractTypes);
+        }
+
+        [HttpGet("ByContractType/{contracttype}")]
+        public async Task<IActionResult> GetOffresByContractType([FromRoute] string contracttype)
+        {
+            var offres = await _offreRepository.GetOffresByContractTypeAsync(contracttype);
+            if (offres == null || !offres.Any())
+            {
+                return NotFound("No offers found for the specified contract type.");
+            }
+            return Ok(offres);
         }
         [HttpGet("{id}")]
         public async Task<IActionResult> GetById([FromRoute] int id)

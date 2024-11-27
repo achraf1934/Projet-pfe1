@@ -1,7 +1,7 @@
 <script lang="ts">
 import FooterShow from '../footer/FooterShow.vue'
 import NavbarShow from '../navbar/NavbarShow.vue'
-import { onMounted, reactive } from 'vue'
+import { onMounted, reactive, ref } from 'vue'
 import axios from 'axios'
 import Swal from 'sweetalert2'
 import { useRoute } from 'vue-router'
@@ -21,6 +21,7 @@ export default {
   setup() {
     const route = useRoute()
     const jwtToken = sessionStorage.getItem('jwtToken')
+    const hasApplied = ref(false)
 
     const state = reactive({
       job: {
@@ -37,6 +38,7 @@ export default {
         Departement: '',
         Lieu: '',
         ContractType: '',
+        ContractDuration: '',
         Gender: '',
         NiveauEtudesRequis: '',
         EstActive: ''
@@ -61,7 +63,28 @@ export default {
         state.data1[fieldName] = input.files[0]
       }
     }
+    const checkIfApplied = async () => {
+      if (jwtToken) {
+        const decodedToken: any = jwtDecode(jwtToken)
+        const userId = decodedToken.nameid
+        const offreId = route.params.id
 
+        try {
+          const response = await axios.get(
+            `http://localhost:5094/api/Candidature/HasApplied/${userId}/${offreId}`,
+            {
+              headers: {
+                Authorization: `Bearer ${jwtToken}`
+              }
+            }
+          )
+          hasApplied.value = response.data
+          console.log('hasapplied', hasApplied.value)
+        } catch (error) {
+          console.error('Error checking application status:', error)
+        }
+      }
+    }
     const fetchOfferData = async () => {
       try {
         const id = route.params.id
@@ -81,6 +104,8 @@ export default {
         state.job.Departement = jobInfo.departement
         state.job.Lieu = jobInfo.lieu
         state.job.ContractType = jobInfo.contractType
+        state.job.ContractDuration = jobInfo.contractDuration
+
         state.job.Gender = jobInfo.gender
         state.job.NiveauEtudesRequis = jobInfo.niveauEtudesRequis
         state.job.EstActive = jobInfo.estActive
@@ -94,12 +119,22 @@ export default {
         console.error('Error fetching offer:', error)
       }
     }
+
     const handleSave = () => {
       if (jwtToken) {
         const decodedToken: any = jwtDecode(jwtToken)
         if (decodedToken && decodedToken.role !== 'admin') {
           state.isSaving = true
 
+          // Affichage d'un Swal de chargement
+          Swal.fire({
+            title: 'Veuillez patienter...',
+            text: 'Envoi en cours de votre candidature.',
+            allowOutsideClick: false,
+            didOpen: () => {
+              Swal.showLoading()
+            }
+          })
           const formData = new FormData()
           formData.append('titre', state.job.Titre)
           if (state.data1.Cv && state.data1.LettreMotivation) {
@@ -115,6 +150,7 @@ export default {
               withCredentials: true
             })
             .then(() => {
+              Swal.close()
               Swal.fire({
                 icon: 'success',
                 title: 'Candidature envoyée!',
@@ -123,6 +159,7 @@ export default {
               })
             })
             .catch((error) => {
+              Swal.close()
               Swal.fire({
                 icon: 'error',
                 title: 'Erreur!',
@@ -136,6 +173,7 @@ export default {
               state.isSaving = false
             })
         } else {
+          Swal.close()
           Swal.fire({
             icon: 'error',
             title: 'Acces denied!',
@@ -145,6 +183,7 @@ export default {
           })
         }
       } else {
+        Swal.close()
         //  JWT n'est pas disponible
         Swal.fire({
           icon: 'error',
@@ -159,13 +198,16 @@ export default {
 
     onMounted(async () => {
       await fetchOfferData()
+      await checkIfApplied()
     })
     return {
       state,
       formatDate,
       fetchOfferData,
       handleFileChange,
-      handleSave
+      checkIfApplied,
+      handleSave,
+      hasApplied
     }
   }
 }
@@ -183,33 +225,42 @@ export default {
           <div class="col-lg-8">
             <div class="d-flex align-items-center mb-5">
               <div class="text-start ps-4">
-                <h3 class="mb-3">{{ state.job.Titre }}</h3> 
+                <h3 class="mb-3">{{ state.job.Titre }}</h3>
                 <span class="text-truncate me-3"
                   ><i class="fa fa-map-marker text-primary me-2"></i>{{ state.job.Lieu }}</span
                 >
                 <span class="text-truncate me-3"
                   ><i class="far fa-clock text-primary me-2"></i>{{ state.job.ContractType }}</span
                 >
+                <span class="text-truncate me-3"
+                  ><i class="far fa-map text-primary me-2"></i
+                  >{{ state.job.ContractDuration }}</span
+                >
               </div>
             </div>
-            <hr>
+            <hr />
             <div class="mb-5">
               <h4 class="mb-3 text-left">Job Description</h4>
               <p v-if="state.job.Description" class="text-left">{{ state.job.Description }}</p>
               <p v-else>No description available.</p>
 
               <h4 class="mb-3 text-left">Qualifications</h4>
-              <p v-if="state.job.Qualifications" class="text-left">{{ state.job.Qualifications }}</p>
+              <p v-if="state.job.Qualifications" class="text-left">
+                {{ state.job.Qualifications }}
+              </p>
               <p v-else>No qualifications listed.</p>
 
               <h4 class="mb-3 text-left">Responsibilities</h4>
-              <p v-if="state.job.Responsibilities" class="text-left">{{ state.job.Responsibilities }}</p>
+              <p v-if="state.job.Responsibilities" class="text-left">
+                {{ state.job.Responsibilities }}
+              </p>
               <p v-else>No responsibilities outlined.</p>
-
-       
             </div>
-<hr>
-            <div class="">
+            <hr />
+            <div v-if="hasApplied">
+              <h1 class="text-primary">You have already applied</h1>
+            </div>
+            <div v-else>
               <h4 class="mb-4">Apply For The Job</h4>
               <form @submit.prevent="handleSave">
                 <div class="row g-3">
@@ -247,8 +298,8 @@ export default {
               style="visibility: visible; animation-delay: 0.1s; animation-name: slideInUp"
             >
               <h4 class="mb-4">Job Summery</h4>
-              <p class="text-left"> 
-                <i class="fa fa-angle-right text-primary me-2 " ></i>Published On :
+              <p class="text-left">
+                <i class="fa fa-angle-right text-primary me-2"></i>Published On :
                 {{ formatDate(state.job.PostedDate) }}
               </p>
               <p class="text-left">
@@ -270,14 +321,19 @@ export default {
             >
               <h4 class="mb-3 text-left">Required Skills</h4>
               <ul class="list-unstyled">
-                <li v-for="skill in state.job.RequiredSkills" :key="skill" class=" text-left">
-                  <i class="fa fa-angle-right text-primary me-2 text-left" aria-hidden="true" ></i>{{ skill }}
+                <li v-for="skill in state.job.RequiredSkills" :key="skill" class="text-left">
+                  <i class="fa fa-angle-right text-primary me-2 text-left" aria-hidden="true"></i
+                  >{{ skill }}
                 </li>
               </ul>
 
               <h4 class="mb-3 text-left">Required Languages</h4>
-              <ul class="list-unstyled ">
-                <li v-for="language in state.job.RequiredLanguages" :key="language" class=" text-left">
+              <ul class="list-unstyled">
+                <li
+                  v-for="language in state.job.RequiredLanguages"
+                  :key="language"
+                  class="text-left"
+                >
                   <i class="fa fa-angle-right text-primary me-2 text-left" aria-hidden="true"></i
                   >{{ language }}
                 </li>
@@ -285,11 +341,12 @@ export default {
 
               <h4 class="mb-3 text-left">Benefits</h4>
               <ul class="list-unstyled">
-                <li v-for="benefit in state.job.Benefits" :key="benefit" class=" text-left">
+                <li v-for="benefit in state.job.Benefits" :key="benefit" class="text-left">
                   <i class="fa fa-angle-right text-primary me-2" aria-hidden="true"></i
                   >{{ benefit }}
                 </li>
-              </ul>            </div>
+              </ul>
+            </div>
           </div>
         </div>
       </div>

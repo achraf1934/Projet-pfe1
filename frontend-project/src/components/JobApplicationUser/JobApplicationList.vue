@@ -1,5 +1,5 @@
 <script lang="ts">
-import { onMounted, reactive, ref } from 'vue'
+import { computed, onMounted, reactive, ref } from 'vue'
 import FooterShow from '../footer/FooterShow.vue'
 import NavbarShow from '../navbar/NavbarShow.vue'
 import axios from 'axios'
@@ -48,6 +48,31 @@ export default {
         dateCreated: new Date()
       }
     })
+    const currentPage = ref(1) // Page actuelle
+    const itemsPerPage = 4 // Nombre d'offres par page
+
+    const searchKeyword = ref<string>('')
+
+    const paginatedJobApplications = computed(() =>
+    filteredJobApplications.value.slice(
+        (currentPage.value - 1) * itemsPerPage,
+        currentPage.value * itemsPerPage
+      )
+    )
+    const changePage = (page: number) => {
+      currentPage.value = page
+    }
+    const totalPages = computed(() => Math.ceil(JobApplications.value.length / itemsPerPage))
+
+    const filteredJobApplications = computed(() =>
+      JobApplications.value.filter((jobApplication) => {
+        const matchesSearch =
+          !searchKeyword.value ||
+          jobApplication.offre.titre.toLowerCase().includes(searchKeyword.value.toLowerCase())
+          console.log("jobApplication",jobApplication)
+        return matchesSearch
+      })
+    )
     const formatDate = (date: Date) => {
       return new Date(date).toLocaleDateString('fr-FR', {
         year: 'numeric',
@@ -55,7 +80,7 @@ export default {
         day: 'numeric'
       })
     }
-  
+
     const handleRowClick = (appUserId: string, offreId: number) => {
       router.push(`/Jobapplication-details/${appUserId}/${offreId}`)
     }
@@ -101,8 +126,8 @@ export default {
     }
     const handleDelete = async (appUserId: string, offreId: number) => {
       Swal.fire({
-        title: 'Êtes-vous sûr ?',
-        text: 'Cette action est irréversible!',
+        title: 'Are you sure ?',
+        text: "You won't be able to revert this!",
         icon: 'warning',
         showCancelButton: true,
         confirmButtonColor: '#3085d6',
@@ -149,18 +174,23 @@ export default {
       JobApplications,
       formatDate,
       state,
+      searchKeyword,
       interview,
       fetchJobApplicationsList,
       handleDelete,
       downloadCv,
       handleRowClick,
-      fetchUser
+      fetchUser,
+      currentPage,
+      paginatedJobApplications,
+      changePage,
+      totalPages
     }
   }
 }
 </script>
 <template>
-   <div class="container-xxl bg-white p-0">
+  <div class="container-xxl bg-white p-0">
     <NavbarShow :currentAdmin="state.currentUser" />
     <div
       class="container-xxl py-5 wow fadeInUp"
@@ -175,6 +205,7 @@ export default {
         >
           Your Job applications
         </h1>
+
         <hr />
         <div class="row gy-5 gx-4">
           <div class="col-lg-8">
@@ -196,40 +227,92 @@ export default {
                 data-wow-delay="0.1s"
                 style="visibility: visible; animation-delay: 0.1s; animation-name: slideInUp"
               >
-              <div class="col" v-for="jobApp in JobApplications" :key="jobApp.id">
-              {{ console.log(jobApp) }}
-              <div class="job-item p-4 mb-4">
-                <div class="d-flex align-items-center">
-                  <div class="text-start ps-1 flex-grow-1">
-                    <h5 class="mb-3">{{ jobApp.offre.titre }}</h5>
-                    <span class="text-truncate me-3"
-                      ><i class="fa fa-map-marker text-primary me-2"></i
-                      >{{ jobApp.offre.lieu }}</span
-                    >
-                    <span class="text-truncate me-3"
-                      ><i class="far fa-clock text-primary me-2"></i
-                      >{{ jobApp.offre.contractType }}</span
-                    >
-                    <span class="text-truncate me-3"
-                      ><i class="far fa-calendar-alt text-primary me-2"></i>Applied On :
-                      {{ formatDate(jobApp.offre.dateDebut) }}
-                    </span>
+                <!--recherche-->
+                <div
+                  class="container-fluid bg-primary mb-5 wow fadeIn"
+                  data-wow-delay="0.1s"
+                  style="
+                    padding: 35px;
+                    visibility: visible;
+                    animation-delay: 0.1s;
+                    animation-name: fadeIn;
+                  "
+                >
+                  <div class="container">
+                    <div class="row g-2">
+                      <div class="col-md-10">
+                        <div class="row g-2">
+                          <div class="col-md-12">
+                            <input
+                              type="text"
+                              class="form-control border-0"
+                              placeholder="Keyword"
+                              v-model="searchKeyword"
+                            />
+                          </div>
+                        
+                        </div>
+                      </div>
+                    </div>
                   </div>
-                 
-                    <span class="text-truncate me-3"
-                    @click="handleRowClick(jobApp.appUserId, jobApp.offreId)">
-                      <i class="far fa fa-eye icon-eye text-primary me-2"></i> </span
-                  >
-
-                  <span
-                    class="text-truncate me-3"
-                    @click="handleDelete(jobApp.appUserId, jobApp.offreId)"
-                  >
-                    <i class="far fa-trash-alt text-primary me-2"></i>
-                  </span>
                 </div>
-              </div>
-            </div>
+                <!-- End recherche-->
+                <div class="col" v-for="jobApp in paginatedJobApplications" :key="jobApp.id">
+                  {{ console.log(jobApp) }}
+                  <div class="job-item p-4 mb-4">
+                    <div class="d-flex align-items-center">
+                      <div class="text-start ps-1 flex-grow-1">
+                        <h5 class="mb-3">{{ jobApp.offre.titre }}</h5>
+                        <span class="text-truncate me-3"
+                          ><i class="fa fa-map-marker text-primary me-2"></i
+                          >{{ jobApp.offre.lieu }}</span
+                        >
+                        <span class="text-truncate me-3"
+                          ><i class="far fa-clock text-primary me-2"></i
+                          >{{ jobApp.offre.contractType }}</span
+                        >
+                        <span class="text-truncate me-3"
+                          ><i class="far fa-calendar-alt text-primary me-2"></i>Applied On :
+                          {{ formatDate(jobApp.offre.dateDebut) }}
+                        </span>
+                      </div>
+
+                      <span
+                        class="text-truncate me-3"
+                        @click="handleRowClick(jobApp.appUserId, jobApp.offreId)"
+                      >
+                        <i class="far fa fa-eye icon-eye text-primary me-2"></i>
+                      </span>
+
+                      <span
+                        class="text-truncate me-3"
+                        @click="handleDelete(jobApp.appUserId, jobApp.offreId)"
+                      >
+                        <i class="far fa-trash-alt text-primary me-2"></i>
+                      </span>
+                    </div>
+                  </div>
+                </div>
+                <!--pagination---->
+                <div class="pagination">
+                  <button :disabled="currentPage === 1" @click="changePage(currentPage - 1)">
+                    Previous
+                  </button>
+                  <button
+                    v-for="page in totalPages"
+                    :key="page"
+                    :class="{ active: page === currentPage }"
+                    @click="changePage(page)"
+                  >
+                    {{ page }}
+                  </button>
+                  <button
+                    :disabled="currentPage === totalPages"
+                    @click="changePage(currentPage + 1)"
+                  >
+                    Next
+                  </button>
+                </div>
               </div>
             </div>
           </div>
@@ -248,12 +331,12 @@ export default {
               </p>
               <p class="m-0 text-left">
                 <i class="fa fa-angle-right text-primary me-2"></i>
-                <button class="btn btn-link"  @click="interview(state.currentUser.Id)">Interviews</button>
+                <button class="btn btn-link" @click="interview(state.currentUser.Id)">
+                  Interviews
+                </button>
               </p>
             </div>
             <div class="col-lg-12"><hr /></div>
-            
-           
           </div>
         </div>
       </div>
@@ -265,4 +348,27 @@ export default {
 <style scoped>
 .text-left {
   text-align: left;
-}</style>
+}
+.pagination {
+  display: flex;
+  justify-content: center;
+  margin-top: 20px;
+  margin-block-end: 80px;
+}
+.pagination button {
+  margin: 0 5px;
+  padding: 5px 10px;
+  border: none;
+  background-color: #f0f0f0;
+  cursor: pointer;
+}
+.pagination button.active {
+  font-weight: bold;
+  background-color: #01b075;
+  color: #fff;
+}
+.pagination button:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+</style>

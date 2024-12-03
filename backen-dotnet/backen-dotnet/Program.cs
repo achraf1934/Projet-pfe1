@@ -101,8 +101,9 @@ using (var scope = app.Services.CreateScope())
 {
     var roleManager = scope.ServiceProvider.GetRequiredService<RoleManager<IdentityRole>>();
     var userManager = scope.ServiceProvider.GetRequiredService<UserManager<AppUser>>();
-
-    // Création des rôles par défaut
+    var context = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+        context.Database.Migrate();
+    // Crï¿½ation des rï¿½les par dï¿½faut
     var roles = new[] { "Admin", "User", "Member" };
     foreach (var role in roles)
     {
@@ -110,30 +111,30 @@ using (var scope = app.Services.CreateScope())
             await roleManager.CreateAsync(new IdentityRole(role));
     }
 
-    // Vérifie si aucun utilisateur n'existe dans la table
+    // Vï¿½rifie si aucun utilisateur n'existe dans la table
     if (!await userManager.Users.AnyAsync())
     {
         var adminUser = new AppUser
         {
             UserName = "admin",
             Email = "chrouf.est@gmail.com",
-            EmailConfirmed = true // Configure comme confirmé pour faciliter la connexion
+            EmailConfirmed = true // Configure comme confirmï¿½ pour faciliter la connexion
         };
 
-        // Crée l'utilisateur admin par défaut avec le mot de passe "admin"
+        // Crï¿½e l'utilisateur admin par dï¿½faut avec le mot de passe "admin"
         var result = await userManager.CreateAsync(adminUser, "Adminadmin.2020");
 
         if (result.Succeeded)
         {
-            // Recharge l'utilisateur depuis la base de données pour s'assurer qu'il a un Id
+            // Recharge l'utilisateur depuis la base de donnï¿½es pour s'assurer qu'il a un Id
             adminUser = await userManager.FindByNameAsync(adminUser.UserName);
 
-            // Ajoute l'utilisateur au rôle Admin
+            // Ajoute l'utilisateur au rï¿½le Admin
             await userManager.AddToRoleAsync(adminUser, "Admin");
         }
         else
         {
-            // Affiche les erreurs si la création échoue
+            // Affiche les erreurs si la crï¿½ation ï¿½choue
             foreach (var error in result.Errors)
             {
                 Console.WriteLine($"Erreur : {error.Description}");
@@ -161,4 +162,3 @@ app.UseAuthorization();
 app.MapControllers();
 
 app.Run();
-

@@ -1,0 +1,8 @@
+CREATE DATABASE api;
+GO
+USE api;
+GO
+CREATE LOGIN charrad WITH PASSWORD = N'StrongP@ssw0rd';
+CREATE USER charrad FOR LOGIN charrad;
+ALTER SERVER ROLE sysadmin ADD MEMBER charrad;
+GO

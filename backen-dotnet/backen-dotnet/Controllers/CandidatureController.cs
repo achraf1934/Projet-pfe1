@@ -123,7 +123,7 @@ namespace backen_dotnet.Controllers
 
                 form.Add(new StreamContent(stream), "cv", fileName);
 
-                var response = await client.PostAsync("http://127.0.0.1:5000/compare", form);
+                var response = await client.PostAsync("http://flask-app:5001/compare", form);
                 if (!response.IsSuccessStatusCode)
                 {
                     return StatusCode(500, "Erreur lors de l'analyse du CV.");

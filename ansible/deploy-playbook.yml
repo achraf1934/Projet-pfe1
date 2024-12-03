@@ -1,0 +1,24 @@
+---
+- name: Deploy the Docker Application
+  hosts: webservers
+  become: true  
+  tasks:
+
+    - name: Ensure the project directory exists
+      file:
+        path: /home/ubuntu/pfe-hr  
+        state: directory
+
+    - name: Copy docker-compose.yml to the server
+      copy:
+        src: ../docker-compose.yaml 
+        dest: /home/ubuntu/pfe-hr/docker-compose.yml
+        mode: '0644'
+
+    - name: Pull & Run the latest Docker image
+      shell: |
+        cd /home/ubuntu/pfe-hr && docker compose up -d
+      args:
+        executable: /bin/bash
+
+  

@@ -1,0 +1,57 @@
+version: '3'
+services:
+  sql-server:
+    build: ./mssql
+    image: mrmch/hr-mssql:latest
+    environment:
+      ACCEPT_EULA: Y
+      SA_PASSWORD: 2astazeY
+      MSSQL_DB: dev
+      MSSQL_USER: bevioo
+      MSSQL_PASSWORD: 7ellowEl7akey
+    ports:
+      - "1433:1433"
+    container_name: mssqldev
+    networks:
+      - app-network
+
+  backend-dotnet:
+    image: mcmoe/hr-backend:latest
+    depends_on:
+      - sql-server
+    environment:
+      - ConnectionStrings__DefaultConnection=Server=sql-server;Database=dev;User Id=SA;Password=2astazeY;Encrypt=False;
+    ports:
+      - "5000:8080"
+    volumes:
+      - ./dataProtectionKeys:/root/.aspnet/DataProtection-Keys
+    networks:
+      - app-network
+
+  vue-app:
+    image: mrmch/hr-frontend:latest
+    container_name: vue-app
+    depends_on:
+      - backend-dotnet
+    ports:
+      - "8080:80"
+    networks:
+      - app-network
+
+  flask-app:
+    image: mrmch/hr-flask:latest
+    ports:
+      - "5001:5000"
+    volumes:
+      - .:/app
+    environment:
+      - FLASK_APP=app.py
+      - FLASK_ENV=production
+    command: flask run --host=0.0.0.0 --port=5000
+
+volumes:
+  mysql-datas:
+
+networks:
+  app-network:
+    driver: bridge  
